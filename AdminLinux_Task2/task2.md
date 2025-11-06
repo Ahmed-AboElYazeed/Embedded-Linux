@@ -2,11 +2,11 @@
 
 ## Question 1:
 
-![image-20251105152329303](/home/zee/snap/typora/108/.config/Typora/typora-user-images/image-20251105152329303.png)
+![image-20251105152329303](assets/image-20251105152329303.png)
 
 ## Question 2
 
-![image-20251029224352605](/home/zee/snap/typora/108/.config/Typora/typora-user-images/image-20251029224352605.png)
+![image-20251029224352605](assets/image-20251029224352605.png)
 
 because our command is know added in the PATH environment which contains all the directories containing my external commands
 
