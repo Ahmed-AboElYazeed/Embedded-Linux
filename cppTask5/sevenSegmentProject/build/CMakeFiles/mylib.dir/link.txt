@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmylib.a CMakeFiles/mylib.dir/src/gpio.cpp.o CMakeFiles/mylib.dir/src/Stream.cpp.o CMakeFiles/mylib.dir/src/IStream.cpp.o CMakeFiles/mylib.dir/src/OStream.cpp.o CMakeFiles/mylib.dir/src/IOStream.cpp.o CMakeFiles/mylib.dir/src/SevenSegment.cpp.o
+/usr/bin/ranlib libmylib.a

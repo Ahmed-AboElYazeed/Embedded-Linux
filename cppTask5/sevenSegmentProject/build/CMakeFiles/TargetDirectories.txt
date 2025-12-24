@@ -1,0 +1,4 @@
+/home/zee/ITI_Files/linux/Embedded-Linux/cppTask5/sevenSegmentProject/build/CMakeFiles/mylib.dir
+/home/zee/ITI_Files/linux/Embedded-Linux/cppTask5/sevenSegmentProject/build/CMakeFiles/sevenSegmentApp.dir
+/home/zee/ITI_Files/linux/Embedded-Linux/cppTask5/sevenSegmentProject/build/CMakeFiles/edit_cache.dir
+/home/zee/ITI_Files/linux/Embedded-Linux/cppTask5/sevenSegmentProject/build/CMakeFiles/rebuild_cache.dir
