@@ -6,8 +6,8 @@ sevenSegment::sevenSegment(const std::string& path,
     : stream(path),
       inStream(in, path),
       outStream(out, path),
-      pinA(1), pinB(2), pinC(3),
-      pinD(4), pinE(5), pinF(6), pinG(7)
+      pinA(2), pinB(3), pinC(4),
+      pinD(17), pinE(27), pinF(22), pinG(10)
 {
     pinA.initPin(COTS::MCAL::GPIO::OUT);
     pinB.initPin(COTS::MCAL::GPIO::OUT);
