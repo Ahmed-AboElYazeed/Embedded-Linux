@@ -64,14 +64,14 @@ target_link_libraries(sevenSegmentApp
 # ===============================
 # Deploy to Raspberry Pi
 # ===============================
-set(RPI_USER pi)
+set(RPI_USER zeerbp)
 set(RPI_IP 192.168.87.153)
-set(RPI_PATH /home/pi/sevenSegment)
+set(RPI_PATH /home/fromPc/sevenSegment)
 
 add_custom_command(
     TARGET sevenSegmentApp
     POST_BUILD
-    COMMAND ssh ${RPI_USER}@${RPI_IP} "mkdir -p ${RPI_PATH}"
+    COMMAND sudo ssh ${RPI_USER}@${RPI_IP} "sudo mkdir -p ${RPI_PATH}"
     COMMAND scp $<TARGET_FILE:sevenSegmentApp> ${RPI_USER}@${RPI_IP}:${RPI_PATH}
     COMMENT "Copying executable to Raspberry Pi"
 )
