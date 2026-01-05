@@ -1,0 +1,6 @@
+ [app1] [context] [2001-10-15,10:50:03] [severity] [first log message from main]
+ [app1] [context] [2001-10-15,10:50:03] [severity] [first log message from main]
+ [app1] [context] [2001-10-15,10:50:03] [severity] [second log message from main]
+ [app1] [context] [2001-10-15,10:50:03] [severity] [third log message from main]
+ [app1] [context] [2001-10-15,10:50:03] [severity] [first log message from main]
+ [app1] [context] [2001-10-15,10:50:03] [severity] [first log message from main]
