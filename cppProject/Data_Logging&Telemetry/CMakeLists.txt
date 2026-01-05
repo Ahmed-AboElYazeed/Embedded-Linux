@@ -3,17 +3,16 @@
     #  cmake --build build
 # to run the built executable:
     #  ./build/bin/LoggingAndTelemetry
-    
+
 # to build with tests:
     #  cmake -S . -B build -DBUILD_TESTS=ON
     #  cmake --build build
 # to run tests (if built with tests):
-    #  cd build
-    #  ctest
+    #  ./build/bin/LoggingTests
 
 cmake_minimum_required(VERSION 3.14)
 
-project(LoggingAndTelemetry VERSION 1.0.0 LANGUAGES CXX ASM)
+project(LoggingAndTelemetry VERSION 1.0.0 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -50,52 +49,43 @@ set(HEADERS
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-# # Compiler warnings
-# if(MSVC)
-#     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
-# else()
-#     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
-# endif()
+# Compiler warnings
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
-# # ============================================================================
-# # Google Test Integration (for future unit testing)
-# # ============================================================================
+# ============================================================================
+# Google Test Integration
+# ============================================================================
 
-# # Option to enable/disable tests
+# this next command will automaticly turn on the unit test file generation.
 # option(BUILD_TESTS "Build unit tests" ON)
 
-# if(BUILD_TESTS)
-#     # Enable testing
-#     enable_testing()
+if(BUILD_TESTS)
+    # Find pre-installed Google Test
+    find_package(Threads REQUIRED)
+    find_package(GTest REQUIRED)
     
-#     # Fetch Google Test
-#     include(FetchContent)
-#     FetchContent_Declare(
-#         googletest
-#         GIT_REPOSITORY https://github.com/google/googletest.git
-#         GIT_TAG v1.14.0
-#     )
+    # Enable testing
+    enable_testing()
     
-#     # For Windows: Prevent overriding the parent project's compiler/linker settings
-#     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    
-#     FetchContent_MakeAvailable(googletest)
-    
-#     # Add test subdirectory if it exists and has CMakeLists.txt
-#     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt)
-#         add_subdirectory(test)
-#     endif()
-# endif()
+    # Add test subdirectory if it exists and has CMakeLists.txt
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt)
+        add_subdirectory(test)
+    endif()
+endif()
 
-# # ============================================================================
-# # Installation (optional)
-# # ============================================================================
+# ============================================================================
+# Installation (optional)
+# ============================================================================
 
-# install(TARGETS ${PROJECT_NAME}
-#     RUNTIME DESTINATION bin
-# )
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION bin
+)
 
-# install(DIRECTORY include/
-#     DESTINATION include
-#     FILES_MATCHING PATTERN "*.hpp"
-# )
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.hpp"
+)

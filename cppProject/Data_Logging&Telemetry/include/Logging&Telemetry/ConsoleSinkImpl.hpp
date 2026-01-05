@@ -5,10 +5,11 @@
 class ConsoleSinkImpl: public ILogSink
 {
 private:
-    /* data */
+    // std::ostream out;
 public:
     ConsoleSinkImpl(/* args */);
     ~ConsoleSinkImpl();
     void write (const LogMessage& msg);
+    void operator<<(const LogMessage& msg);
 };
 

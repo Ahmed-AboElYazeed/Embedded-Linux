@@ -12,14 +12,17 @@ int main() {
     LogMessage msg("first log message from main");
 
     ILogSink *fileSink = new FileSinkImpl();
-    fileSink->write(msg);
+    // fileSink->write(msg);    //reference call
+    *fileSink << msg;           //operator overload call
     delete fileSink;
     std::cout << "finish file writing\n";
 
     ILogSink *consolSink = new ConsoleSinkImpl();
-    consolSink->write(msg);
+    // consolSink->write(msg);
+    *consolSink << msg;
     delete consolSink;
     std::cout << "finish console writing\n";
+
 
     return 0;
 }

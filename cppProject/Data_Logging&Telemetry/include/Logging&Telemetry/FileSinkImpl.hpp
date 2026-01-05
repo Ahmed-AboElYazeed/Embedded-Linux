@@ -12,4 +12,5 @@ public:
     FileSinkImpl(/* args */);
     ~FileSinkImpl();
     void write (const LogMessage& msg);
+    void operator<<(const LogMessage& msg);
 };

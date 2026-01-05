@@ -1,0 +1,5 @@
+if(EXISTS "/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/test/LoggingTests[1]_tests.cmake")
+  include("/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/test/LoggingTests[1]_tests.cmake")
+else()
+  add_test(LoggingTests_NOT_BUILT LoggingTests_NOT_BUILT)
+endif()

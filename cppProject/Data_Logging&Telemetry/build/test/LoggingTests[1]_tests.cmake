@@ -1,0 +1,5 @@
+add_test( LogManagerTest.CanCreateInstance [==[/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/bin/LoggingTests]==] [==[--gtest_filter=LogManagerTest.CanCreateInstance]==] --gtest_also_run_disabled_tests)
+set_tests_properties( LogManagerTest.CanCreateInstance PROPERTIES WORKING_DIRECTORY [==[/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/test]==] SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+add_test( LogMessageTest.ExampleTest [==[/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/bin/LoggingTests]==] [==[--gtest_filter=LogMessageTest.ExampleTest]==] --gtest_also_run_disabled_tests)
+set_tests_properties( LogMessageTest.ExampleTest PROPERTIES WORKING_DIRECTORY [==[/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/build/test]==] SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+set( LoggingTests_TESTS LogManagerTest.CanCreateInstance LogMessageTest.ExampleTest)

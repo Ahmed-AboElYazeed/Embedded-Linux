@@ -24,3 +24,8 @@ void FileSinkImpl::write (const LogMessage& msg)
     // \/ The leading :: ensures that the global system function is called
        ::write(*fdPtr, msg.getMessage().c_str(), msg.getMessage().length());
 }
+void FileSinkImpl::operator<<(const LogMessage& msg)
+{
+        // \/ The leading :: ensures that the global system function is called
+       ::write(*fdPtr, msg.getMessage().c_str(), msg.getMessage().length());
+}

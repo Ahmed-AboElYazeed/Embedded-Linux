@@ -8,3 +8,7 @@ void ConsoleSinkImpl::write (const LogMessage& msg)
     // write to console
     std::cout << msg.getMessage();
 }
+void ConsoleSinkImpl::operator<<(const LogMessage& msg)
+{
+    std::cout << msg.getMessage();
+}

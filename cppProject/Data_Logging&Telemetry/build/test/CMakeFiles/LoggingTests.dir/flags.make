@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I"/home/zee/ITI_Files/linux/Embedded-Linux/cppProject/Data_Logging&Telemetry/include"
 
-CXX_FLAGS = -Wall -Wextra -Wpedantic -std=c++20
+CXX_FLAGS = -std=c++20
 
