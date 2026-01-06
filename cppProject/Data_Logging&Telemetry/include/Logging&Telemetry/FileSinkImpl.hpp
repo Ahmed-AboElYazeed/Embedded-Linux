@@ -11,6 +11,6 @@ private:
 public:
     FileSinkImpl(/* args */);
     ~FileSinkImpl();
-    void write (const LogMessage& msg);
-    void operator<<(const LogMessage& msg);
+    void write (const LogMessage& msg) const;
+    void operator<<(const LogMessage& msg) const;
 };

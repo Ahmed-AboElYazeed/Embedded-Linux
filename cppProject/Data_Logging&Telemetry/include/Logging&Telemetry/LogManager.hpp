@@ -6,10 +6,14 @@
 class LogManager
 {
 private:
-    ILogSink* logSink;
-    std::vector<LogMessage*> message;
+    std::vector<const ILogSink*> logSinks;
+    std::vector<LogMessage> messages;
 public:
     LogManager(/* args */);
     ~LogManager();
-    void routeMessage(const LogMessage& msg);
+    void addSink (const ILogSink& logSink);
+    void addMessage (const LogMessage& msg);
+    void writeOne (const LogMessage& msg);
+    void writeAll ();
+    void operator<<(std::string messageText);
 };

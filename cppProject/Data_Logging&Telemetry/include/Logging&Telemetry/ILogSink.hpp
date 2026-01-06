@@ -8,6 +8,6 @@ private:
 public:
     ILogSink(/* args */);
     virtual ~ILogSink();
-    virtual void write (const LogMessage& msg) = 0;
-    virtual void operator<<(const LogMessage& msg) = 0;
+    virtual void write (const LogMessage& msg) const= 0;
+    virtual void operator<<(const LogMessage& msg) const = 0;
 };

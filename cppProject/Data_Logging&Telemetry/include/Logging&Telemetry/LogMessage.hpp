@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <iostream>
 
 class LogMessage
 {
@@ -19,4 +20,11 @@ public:
                      const std::string& severity,
                      const std::string& text);
     std::string getMessage() const;
+    // std::ostream& operator<<(std::ostream& out);
+    
+// implementing the global operator<< overloading with LogMessage input:
+    // Declare the overloaded operator<< as a friend function
+    // to allow it access to private members (like message_content)
+    // friend also to allow douple inputs (allow calling external frind function)
+    friend std::ostream& operator<<(std::ostream& out, const LogMessage& msg);  
 };

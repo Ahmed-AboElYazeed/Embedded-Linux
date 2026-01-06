@@ -19,12 +19,12 @@ FileSinkImpl::~FileSinkImpl()
     close(*fdPtr);
 }
 
-void FileSinkImpl::write (const LogMessage& msg)
+void FileSinkImpl::write (const LogMessage& msg) const
 {
     // \/ The leading :: ensures that the global system function is called
        ::write(*fdPtr, msg.getMessage().c_str(), msg.getMessage().length());
 }
-void FileSinkImpl::operator<<(const LogMessage& msg)
+void FileSinkImpl::operator<<(const LogMessage& msg) const
 {
         // \/ The leading :: ensures that the global system function is called
        ::write(*fdPtr, msg.getMessage().c_str(), msg.getMessage().length());

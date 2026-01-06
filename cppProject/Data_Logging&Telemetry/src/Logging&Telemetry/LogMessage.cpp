@@ -25,3 +25,10 @@ std::string LogMessage::getMessage() const
 {
     return " [" + appName + "] [" + context + "] [" + time + "] [" + severity + "] [" + text + "]\n";
 }
+
+// implementing the global operator<< overloading with LogMessage input:
+std::ostream& operator<<(std::ostream& out, const LogMessage& msg)
+{
+    out << msg.getMessage();
+    return out;
+}
