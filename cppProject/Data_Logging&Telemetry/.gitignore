@@ -1,1 +1,13 @@
 helpingDocs/
+logfile.txt
+# build artifacts
+build/
+bin/
+*.o
+*.out
+*.a
+CMakeCache.txt
+CMakeFiles/
+Testing/
+CTestTestfile.cmake
+cmake_install.cmake
