@@ -7,7 +7,7 @@ it is an application used to load the desired main APP or main OS on the RAM the
 
 #### 2- Draw and Explain the exact boot chain on Raspberry Pi from power-on until you see the U-Boot prompt.
 
-![Screenshot from 2026-02-18 14-37-21](assets/Screenshot from 2026-02-18 14-37-21.png)
+![image-20260224175610123](assets/image-20260224175610123.png)
 
 **Bounce: ** Draw and Explain the exact boot chain on your PC from power-on until
 Running the OS.
@@ -56,7 +56,7 @@ MOST **PC**s boot on **CPU** then it initialize the GPU, but in **Raspberry Pi**
 
 #### 5- Build and Test Custom U-Boot in QEMU (Cortex-A9):
 
-##### a. Build U-Boot , Customize U-Boot via menuconfig, and Explain the steps you make to configuration.
+##### ---> a. Build U-Boot , Customize U-Boot via menuconfig, and Explain the steps you make to configuration.
 
 `cd u-boot/`
 
@@ -78,7 +78,7 @@ MOST **PC**s boot on **CPU** then it initialize the GPU, but in **Raspberry Pi**
 
 ​	: save these configurations for future use.
 
-##### b. Run U-Boot in QEMU, and Explain the command you use.
+##### ---> b. Run **U-Boot in QEMU**, and Explain the command you use.
 
 `cd u-boot/`
 
@@ -98,17 +98,23 @@ MOST **PC**s boot on **CPU** then it initialize the GPU, but in **Raspberry Pi**
 
 ​	: get back to the u-boot folder
 
-`make vexpress_ca9x4_defconfig`	: select the ready vexpress config
+`make vexpress_ca9x4_defconfig`	
 
-`make -j`	: compile the U-Boot with the new selected config
+​	: select the ready vexpress config
 
-`qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic`	: run QEMU virtual machine and run u-boot on top of it 
+`make -j`	
+
+​	: compile the U-Boot with the new selected config
+
+`qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic`	
+
+​	: run QEMU virtual machine and run u-boot on top of it 
 
 ​	: load 	QEMU with no graphics
 
 ![image-20260218163010832](assets/image-20260218163010832.png)
 
-i can change some configirations to make it visable:
+i can change some configurations to make it visible:
 
 ​	`make menuconfig`
 
@@ -167,10 +173,35 @@ On a Raspberry Pi (especially RPi 3 and 4), the physical DRAM usually starts at 
 
 To change the banner, you must modify the U-Boot source code before compiling.
 
-1. Open the file `include/version_string.h` or search for `CONFIG_IDENT_STRING` in your board's configuration file (e.g., `include/configs/rpi.h`).
-2. Alternatively, in modern U-Boot, you can go to `make menuconfig` -> **General Setup** -> **Custom Display Version String** and enter your text there.
+1. You can go to `make menuconfig` -> **General Setup** -> **Local version** and enter your text there.
 
-### 
+![image-20260226135309722](assets/image-20260226135309722.png)
+
+2. save and compile the U-boot
+
+   `export CROSS_COMPILE=arm-linux-gnueabi-`
+
+   `make -j`
+
+3. run the U-boot
+
+   `qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic -sd ~/ITI_Files/linux/Embedded-Linux/sd.img`
+
+   ![image-20260226135538943](assets/image-20260226135538943.png)
+
+   ###### to fix the SD card:
+
+   `sudo losetup -f --partscan --show sd.img` 
+
+   `sudo mkfs.vfat -F 16 -n boot /dev/loop35p1`
+
+   `sudo mkfs.ext4 -L rootfs /dev/loop35p2`
+
+   ###### more clean version with working emulated SD card:
+
+   `qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic  -drive if=sd,format=raw,file=/home/zee/ITI_Files/linux/Embedded-Linux/sd.img  -audiodev none,id=none`
+
+   ![image-20260226144541595](assets/image-20260226144541595.png)
 
 #### 6. Add a custom command `hello` that prints your name
 
@@ -178,12 +209,14 @@ This requires adding a C function in the U-Boot source (typically in `common/` o
 
 C
 
-```
-#include <common.h>
+```c
+#include <config.h>
 #include <command.h>
+#include <stdio.h>
+#include <linux/stddef.h>
 
 static int do_hello(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]) {
-    printf("My name is [Your Name] - Welcome to Intake 46!\n");
+    printf("My name is Ahmed AboElYazeed - Welcome to Intake 46!\n");
     return 0;
 }
 
@@ -194,7 +227,13 @@ U_BOOT_CMD(
 );
 ```
 
+![image-20260226154352947](assets/image-20260226154352947.png)
 
+![image-20260226154255560](assets/image-20260226154255560.png)
+
+##### Output result on U-boot:
+
+![image-20260226154005826](assets/image-20260226154005826.png)
 
 #### 7. Network Booting with TFTP
 
@@ -205,8 +244,8 @@ U_BOOT_CMD(
 Bash
 
 ```
-setenv ipaddr 192.168.1.50      # Pi IP
-setenv serverip 192.168.1.10    # Laptop IP
+setenv ipaddr 192.168.1.2      # Pi IP
+setenv serverip 192.168.1.3    # Laptop IP
 ping ${serverip}               # Test connection
 ```
 
@@ -219,7 +258,51 @@ tftp ${kernel_addr_r} Image
 tftp ${fdt_addr_r} bcm2710-rpi-3-b.dtb
 ```
 
+#### ==>to test this now with a dumy file:
 
+1. **File created on PC inside /srv/tftp to be coped later as a test:**
+
+![image-20260226165929743](assets/image-20260226165929743.png) 
+
+2.1. **To start the U-boot:**
+
+```
+sudo qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic \      
+-drive if=sd,format=raw,file=/home/zee/ITI_Files/linux/Embedded-Linux/sd.img \ 
+-nic tap -net nic      -audiodev none,id=none
+```
+
+![image-20260226171143608](assets/image-20260226171143608.png)
+
+2.2.**or use a script:**
+
+`vim ifup.sh`
+
+`chmod +x ifup.sh`
+
+![image-20260226173956197](assets/image-20260226173956197.png)
+
+```
+sudo qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic  \ 
+-drive if=sd,format=raw,file=/home/zee/ITI_Files/linux/Embedded-Linux/sd.img \
+-nic tap,script=ifup.sh -net nic      -audiodev none,id=none
+```
+
+3. **Command on U-boot:**
+
+```
+tftp ${kernel_addr_r} tftp_testfile 
+```
+
+![image-20260226165640955](assets/image-20260226165640955.png)
+
+4. **Wireshark frames analysis:**
+
+![image-20260226170050692](assets/image-20260226170050692.png)
+
+5. **result location change in U-boot:** successfully copy a file through tftp protocol.
+
+![image-20260226165742452](assets/image-20260226165742452.png)
 
 #### 8. What is the difference between `run` and `go` commands?
 
