@@ -34,6 +34,7 @@ set(SOURCES
     src/Logging&Telemetry/ILogSink.cpp
     src/Logging&Telemetry/LogManager.cpp
     src/Logging&Telemetry/LogMessage.cpp
+    src/Logging&Telemetry/SafeSocket.cpp
     src/main.cpp
 )
 
@@ -44,6 +45,7 @@ set(HEADERS
     include/Logging&Telemetry/ILogSink.hpp
     include/Logging&Telemetry/LogManager.hpp
     include/Logging&Telemetry/LogMessage.hpp
+    include/Logging&Telemetry/SafeSocket.hpp
 )
 
 # Create executable

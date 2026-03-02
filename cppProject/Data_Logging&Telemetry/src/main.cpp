@@ -4,6 +4,7 @@
 #include "Logging&Telemetry/LogManager.hpp"
 #include "Logging&Telemetry/FileSinkImpl.hpp"
 #include "Logging&Telemetry/ConsoleSinkImpl.hpp"
+#include "Logging&Telemetry/SafeSocket.hpp"
 
 
 
