@@ -1,1 +1,6 @@
-/testing
+*/.vscode
+*/testing
+/photos
+/rasberryPiLinux_repo
+/RaspberryPi_SDcard_Backups
+sd.img
