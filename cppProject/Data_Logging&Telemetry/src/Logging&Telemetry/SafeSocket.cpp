@@ -1,34 +1,39 @@
 #include "Logging&Telemetry/SafeSocket.hpp"
-#include <stdexcept>
-#include <cstring>      // memset, strerror
+#include <cstring>      // memset, strerror, strncpy
 #include <cerrno>
-#include <unistd.h>     // close(), unlink()
-
-// ══════════════════════════════════════════════════════════
-//  Helper — build a human-readable error string
-// ══════════════════════════════════════════════════════════
-static std::string sys_err(const std::string& ctx)
-{
-    return ctx + ": " + std::strerror(errno);
-}
+#include <unistd.h>     // close(), unlink(), read(), write()
 
 // ══════════════════════════════════════════════════════════
 //  SafeSocket  (base)
 // ══════════════════════════════════════════════════════════
+void SafeSocket::log_err(const std::string& ctx, const std::string& detail)
+{
+    std::cerr << "[SafeSocket ERROR] " << ctx;
+    if (!detail.empty())
+        std::cerr << " | " << detail;
+    std::cerr << std::endl;
+}
+
 SafeSocket::SafeSocket(const std::string& path)
     : socket_path(path),
-      addr_uptr(std::make_unique<struct sockaddr_un>())
+      addr_uptr(nullptr)
 {
-    std::memset(addr_uptr.get(), 0, sizeof(struct sockaddr_un));
-    addr_uptr->sun_family = AF_UNIX;
-
-    if (path.size() >= sizeof(addr_uptr->sun_path)) {
-        throw std::invalid_argument(
-            "Socket path too long (max " +
-            std::to_string(sizeof(addr_uptr->sun_path) - 1) + " chars)");
+    if (path.empty()) {
+        log_err("SafeSocket()", "socket path is empty");
+        return;
     }
 
-    std::strncpy(addr_uptr->sun_path, path.c_str(), sizeof(addr_uptr->sun_path) - 1);
+    auto addr = std::make_unique<struct sockaddr_un>();
+    std::memset(addr.get(), 0, sizeof(struct sockaddr_un));
+    addr->sun_family = AF_UNIX;
+
+    if (path.size() >= sizeof(addr->sun_path)) {
+        log_err("SafeSocket()", "socket path too long: " + path);
+        return;
+    }
+
+    std::strncpy(addr->sun_path, path.c_str(), sizeof(addr->sun_path) - 1);
+    addr_uptr = std::move(addr);
 }
 
 SafeSocket::SafeSocket(SafeSocket&& other) noexcept
@@ -51,9 +56,14 @@ SafeSocket& SafeSocket::operator=(SafeSocket&& other) noexcept
 SafeServerSocket::SafeServerSocket(const std::string& path)
     : SafeSocket(path)
 {
+    if (!isReady()) {
+        log_err("SafeServerSocket()", "base initialisation failed, skipping socket()");
+        return;
+    }
+
     server_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_fd == -1) {
-        throw std::runtime_error(sys_err("SafeServerSocket: socket()"));
+        log_err("SafeServerSocket(): socket()", std::strerror(errno));
     }
 }
 
@@ -94,34 +104,40 @@ SafeServerSocket::~SafeServerSocket()
 }
 
 // ──────────────────────────────────────────────────────────
-void SafeServerSocket::bind_and_listen(int max_client_queue)
+bool SafeServerSocket::bind_and_listen(int max_client_queue)
 {
     if (server_fd == -1) {
-        throw std::logic_error("bind_and_listen: socket not initialised");
+        log_err("bind_and_listen()", "invalid server_fd — was construction successful?");
+        return false;
     }
 
-    // Remove stale socket file if it exists
+    // Remove stale socket file if present
     ::unlink(socket_path.c_str());
 
     if (::bind(server_fd,
                reinterpret_cast<struct sockaddr*>(addr_uptr.get()),
                sizeof(struct sockaddr_un)) == -1) {
-        throw std::runtime_error(sys_err("bind_and_listen: bind()"));
+        log_err("bind_and_listen(): bind()", std::strerror(errno));
+        return false;
     }
 
     if (::listen(server_fd, max_client_queue) == -1) {
-        throw std::runtime_error(sys_err("bind_and_listen: listen()"));
+        log_err("bind_and_listen(): listen()", std::strerror(errno));
+        return false;
     }
+
+    return true;
 }
 
 // ──────────────────────────────────────────────────────────
-void SafeServerSocket::accept_client()
+bool SafeServerSocket::accept_client()
 {
     if (server_fd == -1) {
-        throw std::logic_error("accept_client: not listening (call bind_and_listen first)");
+        log_err("accept_client()", "not listening — call bind_and_listen() first");
+        return false;
     }
 
-    // Close any previously accepted client before accepting a new one
+    // Close any previously accepted client
     if (client_fd != -1) {
         ::close(client_fd);
         client_fd = -1;
@@ -129,42 +145,51 @@ void SafeServerSocket::accept_client()
 
     client_fd = ::accept(server_fd, nullptr, nullptr);
     if (client_fd == -1) {
-        throw std::runtime_error(sys_err("accept_client: accept()"));
+        log_err("accept_client(): accept()", std::strerror(errno));
+        return false;
     }
+
+    return true;
 }
 
 // ──────────────────────────────────────────────────────────
 ssize_t SafeServerSocket::read_msg(char* buff, size_t buff_len)
 {
     if (client_fd == -1) {
-        throw std::logic_error("read_msg: no client connected (call accept_client first)");
+        log_err("read_msg()", "no client connected — call accept_client() first");
+        return -1;
     }
+
     ssize_t bytes = ::read(client_fd, buff, buff_len);
     if (bytes == -1) {
-        throw std::runtime_error(sys_err("read_msg: read()"));
+        log_err("read_msg(): read()", std::strerror(errno));
     }
-    return bytes;   // 0 means peer closed connection
+    return bytes;   // 0 = peer closed
 }
 
 // ──────────────────────────────────────────────────────────
 ssize_t SafeServerSocket::write_msg(const char* msg, size_t msg_len)
 {
     if (client_fd == -1) {
-        throw std::logic_error("write_msg: no client connected (call accept_client first)");
+        log_err("write_msg()", "no client connected — call accept_client() first");
+        return -1;
     }
+
     ssize_t bytes = ::write(client_fd, msg, msg_len);
     if (bytes == -1) {
-        throw std::runtime_error(sys_err("write_msg: write()"));
+        log_err("write_msg(): write()", std::strerror(errno));
     }
     return bytes;
 }
 
 // ──────────────────────────────────────────────────────────
-void SafeServerSocket::unlink_path()
+bool SafeServerSocket::unlink_path()
 {
     if (::unlink(socket_path.c_str()) == -1 && errno != ENOENT) {
-        throw std::runtime_error(sys_err("unlink_path: unlink()"));
+        log_err("unlink_path(): unlink()", std::strerror(errno));
+        return false;
     }
+    return true;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -173,9 +198,14 @@ void SafeServerSocket::unlink_path()
 SafeClientSocket::SafeClientSocket(const std::string& path)
     : SafeSocket(path)
 {
+    if (!isReady()) {
+        log_err("SafeClientSocket()", "base initialisation failed, skipping socket()");
+        return;
+    }
+
     client_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
     if (client_fd == -1) {
-        throw std::runtime_error(sys_err("SafeClientSocket: socket()"));
+        log_err("SafeClientSocket(): socket()", std::strerror(errno));
     }
 }
 
@@ -207,28 +237,34 @@ SafeClientSocket::~SafeClientSocket()
 }
 
 // ──────────────────────────────────────────────────────────
-void SafeClientSocket::connect_to_server()
+bool SafeClientSocket::connect_to_server()
 {
     if (client_fd == -1) {
-        throw std::logic_error("connect_to_server: socket not initialised");
+        log_err("connect_to_server()", "invalid client_fd — was construction successful?");
+        return false;
     }
 
     if (::connect(client_fd,
                   reinterpret_cast<struct sockaddr*>(addr_uptr.get()),
                   sizeof(struct sockaddr_un)) == -1) {
-        throw std::runtime_error(sys_err("connect_to_server: connect()"));
+        log_err("connect_to_server(): connect()", std::strerror(errno));
+        return false;
     }
+
+    return true;
 }
 
 // ──────────────────────────────────────────────────────────
 ssize_t SafeClientSocket::read_msg(char* buff, size_t buff_len)
 {
     if (client_fd == -1) {
-        throw std::logic_error("read_msg: not connected (call connect_to_server first)");
+        log_err("read_msg()", "not connected — call connect_to_server() first");
+        return -1;
     }
+
     ssize_t bytes = ::read(client_fd, buff, buff_len);
     if (bytes == -1) {
-        throw std::runtime_error(sys_err("read_msg: read()"));
+        log_err("read_msg(): read()", std::strerror(errno));
     }
     return bytes;
 }
@@ -237,11 +273,13 @@ ssize_t SafeClientSocket::read_msg(char* buff, size_t buff_len)
 ssize_t SafeClientSocket::write_msg(const char* msg, size_t msg_len)
 {
     if (client_fd == -1) {
-        throw std::logic_error("write_msg: not connected (call connect_to_server first)");
+        log_err("write_msg()", "not connected — call connect_to_server() first");
+        return -1;
     }
+
     ssize_t bytes = ::write(client_fd, msg, msg_len);
     if (bytes == -1) {
-        throw std::runtime_error(sys_err("write_msg: write()"));
+        log_err("write_msg(): write()", std::strerror(errno));
     }
     return bytes;
 }

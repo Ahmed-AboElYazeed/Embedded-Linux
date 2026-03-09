@@ -71,7 +71,7 @@ Loop devices allow a file to be treated as a block device so it can be mounted a
 
 ##### a. Command to create a loop device
 
-1. `losetup -f --partscan --show sd.img`
+1. `sudo losetup -f --partscan --show sd.img`
 
 Attaches the virtual disk image as a loop device.
 
@@ -87,10 +87,16 @@ lsblk
 
 ##### c. Command to detach a (mounted) loop device
 
-`sudo unmount /home/zee/ITI_Files/linux/Embedded-Linux/sd.img` `[mounting point]`
+`sudo umount /home/zee/ITI_Files/linux/Embedded-Linux/sd.img` `[mounting point]`
 
+```bash
+sudo umount /home/zee/ITI_Files/linux/Embedded-Linux/sd.img /media/zee/rootfs
+
+sudo umount /home/zee/ITI_Files/linux/Embedded-Linux/sd.img /media/zee/boot
 ```
-losetup -d /dev/loop16
+
+```bash
+sudo losetup -d /dev/loop16
 ```
 
 ------

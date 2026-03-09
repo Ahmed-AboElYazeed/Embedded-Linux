@@ -4,7 +4,11 @@
 #include "Logging&Telemetry/LogManager.hpp"
 #include "Logging&Telemetry/FileSinkImpl.hpp"
 #include "Logging&Telemetry/ConsoleSinkImpl.hpp"
+#include "Logging&Telemetry/ITelemetrySource.hpp"
+#include "Logging&Telemetry/SafeFile.hpp"
 #include "Logging&Telemetry/SafeSocket.hpp"
+#include "Logging&Telemetry/FileTelemetrySourceImpl.hpp"
+#include "Logging&Telemetry/SocketTelemetrySourceImpl.hpp"
 
 
 
