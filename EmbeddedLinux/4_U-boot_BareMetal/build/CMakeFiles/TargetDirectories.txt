@@ -1,3 +1,0 @@
-/home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/4_U-boot_BareMetal/build/CMakeFiles/mybaremetalapp.elf.dir
-/home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/4_U-boot_BareMetal/build/CMakeFiles/edit_cache.dir
-/home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/4_U-boot_BareMetal/build/CMakeFiles/rebuild_cache.dir

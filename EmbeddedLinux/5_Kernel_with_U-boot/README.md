@@ -24,8 +24,6 @@ make -j$(nproc)
 
 ## 2. Compile and build kernel for your target hardware:
 
-## 
-
 ```bash
 # To go to the folder where you installed rasberryPiLinux_repo
 cd /home/zee/ITI_Files/linux/Embedded-Linux/rasberryPiLinux_repo/linux
@@ -50,6 +48,51 @@ make -j$(nproc)
 
 
 ## 3. collect and edit the minimal bootfs files:
+
+![image-20260310143340128](assets/image-20260310143340128.png)
+
+`config.txt`
+
+```bash
+# For more options and information see
+# http://rptl.io/configtxt
+# Some settings may impact device functionality. See link above for details
+
+# NOTE: NO comments allowed beside a variable like:
+#	{	kernel=u-boot.bin	# this comment will make a huge problem }
+#
+
+
+
+
+# ── Bare Metal config.txt for Raspberry Pi 3B+ ──
+
+
+# Boot in 64-bit AArch64 mode → loads kernel8.img
+arm_64bit=1
+
+# load U-Boot instead of kernel8.img
+	kernel=u-boot.bin
+# define the device tree blob (optional)
+# device_tree=bcm2710-rpi-3-b-plus.dtb
+
+
+# Enable UART for debugging (GPIO 14/15)
+enable_uart=1
+console=ttyAMA0,115200
+
+
+
+
+# Disable all OS-specific stuff (optional)
+disable_overscan=1
+disable_fw_kms_setup=1
+camera_auto_detect=0
+display_auto_detect=0
+auto_initramfs=0
+```
+
+
 
 ## 4. go for QEMU to test your codes
 
@@ -102,13 +145,16 @@ setenv bootargs "console=ttyAMA0,115200 root=/dev/mmcblk0p2 rootwait rw earlycon
 
 # 3. Load Kernel higher in RAM (0x1000000 = 16MB offset) 
 # This gives the kernel plenty of space to decompress without hitting reserved blocks
-fatload mmc 0:1 0x01000000 Image
+# to avoid "Moving the Image from 0x80000 to 0x200000, end=0x1c00000"
+setenv $kernel_addr_r 0x01000000
+setenv $fdt_addr_r    0x030000000x03000000
+fatload mmc 0:1 $kernel_addr_r Image
 
 # 4. Load Device Tree
-fatload mmc 0:1 0x03000000 bcm2710-rpi-3-b-plus.dtb
+fatload mmc 0:1 $fdt_addr_r bcm2710-rpi-3-b-plus.dtb
 
 # 5. Boot
-booti 0x01000000 - 0x03000000
+booti $kernel_addr_r - $fdt_addr_r
 ```
 
 ![image-20260308025552026](assets/image-20260308025552026.png)
@@ -121,6 +167,18 @@ booti 0x01000000 - 0x03000000
 
 ### Raspberry pi Implementation
 
+```bash
+
+# 3. Load Kernel higher 
+fatload mmc 0:1 $kernel_addr_r Image
+
+# 4. Load Device Tree
+fatload mmc 0:1 $fdt_addr_r bcm2710-rpi-3-b-plus.dtb
+
+# 5. Boot
+booti $kernel_addr_r - $fdt_addr_r
+```
+
 
 
 ### output result on PuTTY: "successful kernel panic (>_<) "
@@ -131,41 +189,39 @@ booti 0x01000000 - 0x03000000
 
 
 
-i faced this problem:
+## I faced this problem:
 
-1. stuck on th GPU initialization "start.elf":
+#### 1. stuck on th GPU initialization "start.elf":
 
-   this most proberly caused by the config.txt file mistake, i had this mistake:
+this most proberly caused by the config.txt file mistake, i had this mistake:
 
-   ```bash
-   # I wrote this :
-   kernel=u-boot.bin		# define the walkup kernel to be U-boot 
-   
-   # NOTE: NO comments allowed beside a variable like:
-   #	{	kernel=u-boot.bin	# this comment will make a huge problem }
-   
-   # SOLUTION: do it like this:
-   # define the walkup kernel to be U-boot 
-   kernel=u-boot.bin
-   
-   # this also correct:
-   # define the walkup kernel to be U-boot 
-   	kernel=u-boot.bin
-   ```
+```bash
+# I wrote this :
+kernel=u-boot.bin		# define the walkup kernel to be U-boot 
 
-   
+# NOTE: NO comments allowed beside a variable like:
+#	{	kernel=u-boot.bin	# this comment will make a huge problem }
 
-2. Unknown load commands
+# SOLUTION: do it like this:
+# define the walkup kernel to be U-boot 
+kernel=u-boot.bin
 
-   solved by: restarting the raspberry pi, i did not update any file to solve it.
+# this also correct:
+# define the walkup kernel to be U-boot 
+	kernel=u-boot.bin
+```
+
+
+
+### 2. Unknown load commands
+
+solved by: restarting the raspberry pi, i did not update any file to solve it.
 
 ![image-20260309015254229](assets/image-20260309015254229.png)
 
-3. Failed to load Image, while successfully loading the dtb:
+#### 3. Failed to load Image, while successfully loading the dtb:
 
 ![image-20260309161531694](assets/image-20260309161531694.png)
-
-​	moving the kernel address did not work	 *setenv kernel_addr_r 0x01000000*
 
 ​	because, it did not see the Image at all:	
 
@@ -173,16 +229,22 @@ i faced this problem:
 
 ![image-20260309163423036](assets/image-20260309163423036.png)
 
-​	solution:
+​	solution: copy the image to the sd card
 
-​	copy the image to the sd card
+#### 4. Bad linux ARM64 Image magic!
 
-4. Bad linux ARM64 Image magic!
-
-   means U-Boot reached the memory address where you told it the kernel was, but it didn't find the specific "signature" (magic bytes) that every ARM64 Linux kernel must have in its header.
-
-   
+means U-Boot reached the memory address where you told it the kernel was, but it didn't find the specific "signature" (magic bytes) that every ARM64 Linux kernel must have in its header.
 
 ![image-20260309170221371](assets/image-20260309170221371.png)
 
 ![image-20260309175557774](assets/image-20260309175557774.png)
+
+solution: recompile the kernel again.
+
+
+
+### Final Output result on PuTTY: "successful kernel panic (>_<) "
+
+![image-20260309191940247](assets/image-20260309191940247.png)
+
+![image-20260309191957438](assets/image-20260309191957438.png)

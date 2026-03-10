@@ -1,3 +1,0 @@
-/home/zee/ITI_Files/linux/Embedded-Linux/cmake/build/CMakeFiles/7segmant.dir
-/home/zee/ITI_Files/linux/Embedded-Linux/cmake/build/CMakeFiles/edit_cache.dir
-/home/zee/ITI_Files/linux/Embedded-Linux/cmake/build/CMakeFiles/rebuild_cache.dir

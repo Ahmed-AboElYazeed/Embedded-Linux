@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/7segmant.dir/src/dio.c.o CMakeFiles/7segmant.dir/src/main.c.o -o 7segmant 

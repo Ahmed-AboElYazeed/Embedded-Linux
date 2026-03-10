@@ -9,16 +9,18 @@ re-flashing the SD card every time you change your code.
 
 ## Step 1 — Build U-Boot
 
-    git clone https://github.com/u-boot/u-boot.git
-    cd u-boot
-    
-    # Pi 3B+ 64-bit defconfig
-    make rpi_3_b_plus_defconfig \
-    				CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
-    make menuconfig
-    make -j$(nproc) CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
-    
-    # Output: u-boot.bin
+```bash
+git clone https://github.com/u-boot/u-boot.git
+cd u-boot
+
+# Pi 3B+ 64-bit defconfig
+make rpi_3_b_plus_defconfig \
+				CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
+make menuconfig
+make -j$(nproc) CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
+
+# Output: u-boot.bin
+```
 
 ---
 

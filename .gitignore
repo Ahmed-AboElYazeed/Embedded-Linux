@@ -1,9 +1,14 @@
-*/.vscode
-*/testing
-/.vscode
-/testing
-/photos
-/rasberryPiLinux_repo
-/RaspberryPi_SDcard_Backups
-/u-boot
+# Ignores these folders anywhere in the repo
+build/
+.vscode/
+testing/
+
+# Root-specific ignores (if you only want them ignored at the top level)
+/photos/
+/rasberryPiLinux_repo/
+/RaspberryPi_SDcard_Backups/
+/u-boot/
+
+# Files
 sd.img
+

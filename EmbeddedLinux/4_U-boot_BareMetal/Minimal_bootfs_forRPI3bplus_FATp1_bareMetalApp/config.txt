@@ -17,6 +17,7 @@ arm_64bit=1
 
 # load U-Boot instead of kernel8.img
 	kernel=u-boot.bin
+# define the device tree blob (optional)
 # device_tree=bcm2710-rpi-3-b-plus.dtb
 
 

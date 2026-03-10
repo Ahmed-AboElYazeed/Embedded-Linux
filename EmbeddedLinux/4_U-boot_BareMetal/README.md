@@ -122,12 +122,11 @@ Contains:
 
 ## 2. Build
 ```bash
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make
+cmake --build build
+cmake -S . -B build
 ```
 
-Output: `kernel8.img`
+Output: `mybaremetalapp.img`
 
 ---
 
@@ -141,9 +140,13 @@ Copy to a FAT32 SD card alongside:
 
 (Firmware files from: https://github.com/raspberrypi/firmware/tree/master/boot)
 
+### Minimal files needed on bootfs:
+
+![image-20260310143458250](assets/image-20260310143458250.png)
+
 #### for example "Rasbian OS bootfs" contains:
 
-![Screenshot from 2026-03-07 16-53-48](assets/Screenshot from 2026-03-07 16-53-48.png)
+![](assets/Screenshot from 2026-03-07 16-53-48.png)
 
 ---
 
@@ -157,3 +160,5 @@ GPIO 27 (pin 13) ── 330Ω ── LED(+)    LED(-) ── GND (pin 14)
 ## Run the program
 
 ![image-20260309193454020](assets/image-20260309193454020.png)
+
+![WhatsApp Image 2026-03-10 at 2.18.12 PM.jpeg](assets/WhatsApp Image 2026-03-10 at 2.18.12 PM.jpeg)
