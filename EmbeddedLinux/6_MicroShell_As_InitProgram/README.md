@@ -1,4 +1,4 @@
-# Loading Kernel & Custom Init Program 'shell' with U-Boot (Remove Kernel Panic)
+# Loading Kernel & Custom Init Program with U-Boot (shell without commands)
 
 ## Project Description
 
@@ -11,7 +11,9 @@ The main goal is to boot the kernel successfully with **U-Boot** and replace the
 - preparing the **bootfs** and **rootfs**
 - optional **TFTP** and **NFS** setup
 - testing on **QEMU**
-- running on the real **Raspberry Pi 3 B+**
+- running on the real **Raspberry Pi 3 B+** (SD card, NFS, or initramfs)
+
+
 
 ---
 
@@ -136,7 +138,7 @@ ifconfig
 sudo apt install nfs-kernel-server
 
 # Create directory for rootfs
-sudo mkdir -p /srv/nfs/rootfs
+sudo mkdir -p /home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs
 
 # Configure NFS exports
 sudo nano /etc/exports
@@ -149,13 +151,15 @@ sudo nano /etc/exports
 
 /home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs 192.168.1.5(rw,sync,no_root_squash,no_subtree_check)
 
+# /srv/nfs/rootfs  *(rw,sync,no_subtree_check)
+
 # Example for NFSv2 and NFSv3:
 # /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)
 #
 # Example for NFSv4:
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
-#
+# 
 ```
 
 now put the rootfs files on the selected location written on the exports folder: **"/home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs "**
@@ -205,7 +209,7 @@ sudo losetup -d /dev/loop16
 
 ---
 
-###  b. put the necessery files on the sd card bootfs & rootfs partitions
+###  b. put the necessary files on the "sd card bootfs" partition
 
 ```bash
 sudo cp -rv ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/* /media/zee/boot/
@@ -213,20 +217,46 @@ sudo cp -rv ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI
 
 ![image-20260310143340128](assets/image-20260310143340128.png)
 
-using sd card connected to the pc:
+### c. put the necessary files on the "rootfs" partition
+
+using **"sd card"** connected to the pc:
 
 ```bash
 sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /media/zee/rootfs/init
 
-sudo chmod +x /media/zee/rootfs/init
+# sudo chmod +x /media/zee/rootfs/init
 ```
 
-using NFS:
+using **"NFS"**:
 
 ```bash
-sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
+cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
 
-sudo chmod +x /home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
+# sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
+```
+
+using **"Initramfs"**:
+
+```bash
+# clean the folder
+sudo rm -r ~/ITI_Files/linux/Embedded-Linux/initramfs/*
+
+# fill the folder with all the rootfs folders and files:
+sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/initramfs/ramrootfs/init
+# sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/initramfs/init
+
+# Create the initramfs cpio archive
+# find . | cpio -H newc -ov --owner root:root > ../initramfs.cpio
+find ~/ITI_Files/linux/Embedded-Linux/initramfs/ramrootfs/ | cpio -H newc -ov --owner root:root > ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio
+
+# Compress it (optional but recommended)
+# gzip -k ../initramfs.cpio
+gzip -k ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio
+# Result: initramfs.cpio.gz
+
+# wrap everything with mkimage:		If using "bootm" (legacy)
+# mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d initramfs.cpio.gz uInitramfs
+~/ITI_Files/linux/Embedded-Linux/u-boot/tools/mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz uInitramfs
 ```
 
 ![image-20260327065611591](assets/image-20260327065611591.png)
@@ -237,7 +267,7 @@ or if you have any old complete file system
 
 ---
 
-###  c. run QEMU {u-boot} for simulating Raspberry Pi 3 +
+###  d. run QEMU {u-boot} for simulating Raspberry Pi 3 +
 
 without TFTP:
 
@@ -278,16 +308,25 @@ sudo qemu-system-aarch64 \
 
 ---
 
-###  d. enable TFTP protocol {to easily copy files from PC to Ram through u-boot}
+###  e. enable TFTP protocol 
+
+#### to easily copy files from PC to Ram through u-boot
+
+`PC commands`
 
 ```bash
-# copy what ever you want to load on the ram to NFTP folder
+# copy what ever you want to load on the ram to TFTP folder
 # image:
 sudo cp /home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/Image /srv/tftp/
 
 # ➡️ 🌟 init program --> shell:
 sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /srv/tftp/init
-sudo chmod +x /srv/tftp/init
+#sudo chmod +x /srv/tftp/init
+
+# ➡️ 🌟 initramfs:
+sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz /srv/tftp/
+# or 
+sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/uInitramfs /srv/tftp/
 ```
 
 `u-boot commands`
@@ -308,7 +347,7 @@ ping 192.168.1.3
 
 ---
 
-###  e. set the 'bootargs'         'i did not reach the correct one yet'
+###  f. set the 'bootargs'         *'i didn't reach the correct one for QEMU yet'*
 
 `u-boot commands`
 
@@ -319,6 +358,206 @@ setenv bootargs 'console=ttyAMA0,115200 root=/dev/mmcblk0p2 rootwait rw init=ini
 setenv bootargs "console=ttyS0,115200 8250.nr_uarts=1 loglevel=8 panic=5 rdinit=/init " 
 # ai
 setenv bootargs 'console=ttyAMA1,115200 root=/dev/mmcblk0p2 rootwait rw init=/init earlycon=pl011,0x3f201000'
+```
+
+---
+
+###  g. set the 'bootcmd'
+
+`u-boot commands`
+
+```bash
+# load form sd card
+setenv bootcmd 'fatload mmc 0:1 ${kernel_addr_r} Image; fatload mmc 0:1 ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; booti ${kernel_addr_r} - ${fdt_addr_r}'
+```
+
+```bash
+# load form TFTP
+setenv bootcmd 'tftp ${kernel_addr_r} Image; tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; booti ${kernel_addr_r} - ${fdt_addr_r}'
+```
+
+`[or]`
+
+```bash
+# to load every time and wait on the u-boot untill "run booot"
+setenv bootcmd 'tftp ${kernel_addr_r} Image; tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb'
+setenv booot 'booti ${kernel_addr_r} - ${fdt_addr_r}'
+####
+run booot
+```
+
+`[or]` use a bootcmd script
+
+```bash
+# Load Kernel
+setenv load_kernel 'if tftp ${kernel_addr_r} Image; then echo ">>> Kernel loaded from TFTP <<<"; else echo "!!! TFTP failed for Kernel, loading from SD !!!"; load mmc 0:1 ${kernel_addr_r} Image; echo ">>> Kernel loaded from SD card <<<"; fi; echo "===================="'
+
+# Load DTB
+setenv load_dtb 'if tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; then echo ">>> DTB loaded from TFTP <<<"; else echo "!!! TFTP failed for DTB, loading from SD !!!"; load mmc 0:1 ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; echo ">>> DTB loaded from SD card <<<"; fi; echo "===================="'
+
+# Load all
+setenv load_all 'run load_kernel; run load_dtb'
+
+# Boot command
+setenv bootcmd 'run load_all; booti ${kernel_addr_r} - ${fdt_addr_r}'
+# setenv bootcmd 'run load_all'
+
+# Save
+saveenv
+```
+
+---
+
+###  h. load the kernel onto the RAM and run it:       i had {try 1, try 2}
+
+#### try1: "Shell runs but unable to take keyboard inputs"
+
+```bash
+# Load kernel & DTB via TFTP if you need
+tftp ${kernel_addr_r} Image
+tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb
+
+# or load from 
+fatload mmc 0:1 $kernel_addr_r Image 
+fatload mmc 0:1 $fdt_addr_r bcm2710-rpi-3-b-plus.dtb 
+
+booti $kernel_addr_r - $fdt_addr_r 
+```
+
+![image-20260327003925160](assets/image-20260327003925160.png)
+
+#### try2: " "
+
+---
+
+###  i. QEMU kernel panic "output after loading":
+
+> here
+
+---
+
+# Raspberry pi Implementation
+
+## 7. Go for the Real Hardware
+
+###  a. run the picocom to communicate with U-boot
+
+```bash
+picocom -b 115200 /dev/ttyUSB0
+```
+
+---
+
+###  b. put the necessary files on the "sd card bootfs" partition
+
+```bash
+sudo cp -rv ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/* /media/zee/boot/
+```
+
+![image-20260310143340128](assets/image-20260310143340128.png)
+
+### c. put the necessary files on the "rootfs" partition
+
+using **"sd card"** connected to the pc:
+
+```bash
+sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /media/zee/rootfs/init
+
+# sudo chmod +x /media/zee/rootfs/init
+```
+
+using **"NFS"**:
+
+```bash
+cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
+
+# sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs/init
+```
+
+using **"Initramfs"**:
+
+```bash
+# clean the folder
+sudo rm -r ~/ITI_Files/linux/Embedded-Linux/initramfs/*
+
+# fill the folder with all the rootfs folders and files:
+sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/initramfs/ramrootfs/init
+# sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/initramfs/init
+
+# Create the initramfs cpio archive
+# find . | cpio -H newc -ov --owner root:root > ../initramfs.cpio
+find ~/ITI_Files/linux/Embedded-Linux/initramfs/ramrootfs/ | cpio -H newc -ov --owner root:root > ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio
+
+# Compress it (optional but recommended)
+# gzip -k ../initramfs.cpio
+gzip -k ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio
+# Result: initramfs.cpio.gz
+
+# wrap everything with mkimage:		If using "bootm" (legacy)
+# mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d initramfs.cpio.gz uInitramfs
+~/ITI_Files/linux/Embedded-Linux/u-boot/tools/mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz uInitramfs
+```
+
+###  d. enable TFTP protocol 
+
+#### to easily copy files from PC to Ram through u-boot
+
+`PC commands`
+
+```bash
+# copy what ever you want to load on the ram to TFTP folder
+# image:
+sudo cp /home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/Image /srv/tftp/
+
+# ➡️ 🌟 init program --> shell:
+sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /srv/tftp/init
+#sudo chmod +x /srv/tftp/init
+
+# ➡️ 🌟 initramfs:
+sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz /srv/tftp/
+# or 
+sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/uInitramfs /srv/tftp/
+```
+
+`u-boot commands`
+
+```bash
+# Host machine IP (ifup.sh assigned this)
+setenv serverip 192.168.1.3
+
+# Guest IP
+setenv ipaddr 192.168.1.5
+
+# Save environment
+saveenv
+
+# Test
+ping 192.168.1.3
+```
+
+---
+
+###  e. set the 'bootargs'
+
+`config.txt`
+
+```
+[all]
+arm_64bit=1
+kernel=u-boot.bin
+enable_uart=1
+```
+
+`u-boot commands`
+
+```bash
+setenv bootargs "console=ttyS0,115200 8250.nr_uarts=1 loglevel=8 panic=5 root=/dev/mmcblk0p2 rootwait rw init=init" 
+```
+
+`[or]` use NFS
+
+```bash
+setenv bootargs 'console=ttyS0,115200 8250.nr_uarts=1 loglevel=8 panic=5 root=/dev/nfs rootwait rw init=init nfsroot=192.168.1.3:/home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs,nfsvers=3,tcp ip=192.168.1.5:192.168.1.3:192.168.1.3:255.255.255.0::eth0:off'
 ```
 
 ---
@@ -369,139 +608,7 @@ saveenv
 
 ---
 
-###  g. load the kernel onto the RAM and run it:       i had {try 1, try 2}
-
-#### try1: "Shell runs but unable to take keyboard inputs"
-
-```bash
-# Load kernel & DTB via TFTP if you need
-tftp ${kernel_addr_r} Image
-tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb
-
-# or load from 
-fatload mmc 0:1 $kernel_addr_r Image 
-fatload mmc 0:1 $fdt_addr_r bcm2710-rpi-3-b-plus.dtb 
-
-booti $kernel_addr_r - $fdt_addr_r 
-```
-
-![image-20260327003925160](assets/image-20260327003925160.png)
-
-#### try2: " "
-
----
-
-###  h. QEMU kernel panic "output after loading":
-
-> 
-
----
-
-# Raspberry pi Implementation
-
-## 7. Go for the Real Hardware
-
-###  a. run the picocom to communicate with U-boot
-
-```bash
-picocom -b 115200 /dev/ttyUSB0
-```
-
----
-
-###  b. copy files for TFTP protocol {to easily copy files from PC to Ram through u-boot}
-
-```bash
-# copy what ever you want to load on the ram to NFTP folder
-# image:
-sudo cp /home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/Image /srv/tftp/
-
-# ➡️ 🌟 init program --> shell:
-sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /srv/tftp/init
-sudo chmod +x /srv/tftp/init
-```
-
-`u-boot commands`
-
-```bash
-# Host machine IP (ifup.sh assigned this)
-setenv serverip 192.168.1.3
-
-# Guest IP
-setenv ipaddr 192.168.1.5
-
-# Save environmentS
-saveenv
-
-# Test
-ping 192.168.1.3
-```
-
----
-
-###  c. set the 'bootargs'
-
-`u-boot commands`
-
-```bash
-setenv bootargs "console=ttyS0,115200 8250.nr_uarts=1 loglevel=8 panic=5 root=/dev/mmcblk0p2 rootwait rw init=init" 
-```
-
-`[or]` use NFS
-
-```bash
-setenv bootargs 'console=ttyS0,115200 8250.nr_uarts=1 loglevel=8 panic=5 root=/dev/nfs rootwait rw init=init nfsroot=192.168.1.3:/home/zee/ITI_Files/linux/Embedded-Linux/NFS_rootfs/rootfs,nfsvers=3,tcp ip=192.168.1.5:192.168.1.3:192.168.1.3:255.255.255.0::eth0:off'
-```
-
----
-
-###  d. set the 'bootcmd'
-
-`u-boot commands`
-
-```bash
-# load form sd card
-setenv bootcmd 'fatload mmc 0:1 ${kernel_addr_r} Image; fatload mmc 0:1 ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; booti ${kernel_addr_r} - ${fdt_addr_r}'
-```
-
-```bash
-# load form TFTP
-setenv bootcmd 'tftp ${kernel_addr_r} Image; tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; booti ${kernel_addr_r} - ${fdt_addr_r}'
-```
-
-`[or]`
-
-```bash
-# to load every time and wait on the u-boot untill "run booot"
-setenv bootcmd 'tftp ${kernel_addr_r} Image; tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb'
-setenv booot 'booti ${kernel_addr_r} - ${fdt_addr_r}'
-####
-run booot
-```
-
-`[or]` use a bootcmd script
-
-```bash
-# Load Kernel
-setenv load_kernel 'if tftp ${kernel_addr_r} Image; then echo ">>> Kernel loaded from TFTP <<<"; else echo "!!! TFTP failed for Kernel, loading from SD !!!"; load mmc 0:1 ${kernel_addr_r} Image; echo ">>> Kernel loaded from SD card <<<"; fi; echo "===================="'
-
-# Load DTB
-setenv load_dtb 'if tftp ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; then echo ">>> DTB loaded from TFTP <<<"; else echo "!!! TFTP failed for DTB, loading from SD !!!"; load mmc 0:1 ${fdt_addr_r} bcm2710-rpi-3-b-plus.dtb; echo ">>> DTB loaded from SD card <<<"; fi; echo "===================="'
-
-# Load all
-setenv load_all 'run load_kernel; run load_dtb'
-
-# Boot command
-setenv bootcmd 'run load_all; booti ${kernel_addr_r} - ${fdt_addr_r}'
-# setenv bootcmd 'run load_all'
-
-# Save
-saveenv
-```
-
----
-
-###  e. output result on "picocom": "successful working micro shell "
+###  g. output result on "picocom": "successful working micro shell "
 
 This is the successful final result after booting the kernel and running the custom shell as the init process on the real Raspberry Pi.
 
@@ -523,7 +630,7 @@ successful shell ran as init program with limited command [ "cd", "help", "exit"
 
 # Output Summary
 
-##  f. Final Output on Real Hardware
+##  h. Final Output on Real Hardware
 
 The project successfully boots the Linux kernel using **U-Boot** and launches the custom **micro shell** as the init program.
 
