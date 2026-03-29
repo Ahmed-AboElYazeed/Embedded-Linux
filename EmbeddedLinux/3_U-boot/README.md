@@ -288,6 +288,38 @@ sudo qemu-system-arm -M vexpress-a9 -kernel u-boot -nographic  \
 -nic tap,script=ifup.sh -net nic      -audiodev none,id=none
 ```
 
+```bash
+### for Raspberry PI
+
+# using User-mode (NAT) Built-in QEMU
+sudo qemu-system-aarch64 \
+    -M raspi3b \
+    -m 1024 \
+    -cpu cortex-a53 \
+    -kernel u-boot.bin \
+    -dtb bcm2710-rpi-3-b-plus.dtb \
+    -device usb-kbd \
+    -sd /home/zee/ITI_Files/linux/Embedded-Linux/sd.img \
+    -netdev user,id=net0,tftp=/home/zee/ITI_Files/linux/Embedded-Linux/tftp,hostfwd=tcp::2222-:22 \
+    -device usb-net,netdev=net0 \
+    -nographic
+    
+# using TAP Real IP (host↔guest) External/real
+sudo qemu-system-aarch64 \
+    -M raspi3b \
+    -m 1024 \
+    -cpu cortex-a53 \
+    -kernel u-boot.bin \
+    -dtb bcm2710-rpi-3-b-plus.dtb \
+    -device usb-kbd \
+    -drive if=sd,format=raw,file=/home/zee/ITI_Files/linux/Embedded-Linux/sd.img \
+    -nic tap,script=/home/zee/ITI_Files/linux/Embedded-Linux/u-boot/ifup.sh \
+    -audiodev none,id=none \
+    -nographic
+```
+
+
+
 3. **Command on U-boot:**
 
 ```

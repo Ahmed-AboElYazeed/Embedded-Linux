@@ -1,5 +1,49 @@
 # Virtual SD Card for Emb-Linux
 
+## Create a Virtual SD Card
+
+```bash
+touch sd.img
+dd if=/dev/zero of=/sd.img bs=iM count=1024
+cfdisk sd.img
+# then activate the Virtual SD Card
+./activateVirtualSdCard.sh	#MODEFY the sd.img name & location in the script 'hard codded'
+```
+
+## Activate the existing Virtual SD Card script
+
+each time you close your development machine loop devices is deleted so you need ot 
+
+```bash
+cd ~/ITI_Files/linux/Embedded-Linux
+sudo losetup -f --partscan --show sd.img
+```
+
+`output`
+
+/dev/loop16
+
+```bash
+sudo mkfs.vfat -F 16 -n boot /dev/loop16p1
+sudo mkfs.ext4 -L rootfs /dev/loop16p2
+
+sudo mount /dev/loop16p1 /media/zee/boot
+sudo mount /dev/loop16p2 /media/zee/rootfs
+```
+
+`or`
+
+ just use this script {edit sd.img name or location if needed}
+
+```bash
+cd ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/2_Virtual_SDcard/
+./activateVirtualSdCard.sh
+```
+
+`script output`
+
+![image-20260326023802901](assets/image-20260326023802901.png)
+
 #### Q1: Create a 1 GiB Virtual Disk Image and explain the command you use.
 
 To create the virtual SD card:

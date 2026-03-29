@@ -215,7 +215,7 @@ kernel=u-boot.bin
 
 ### 2. Unknown load commands
 
-solved by: restarting the raspberry pi, i did not update any file to solve it.
+solved by: if the command it compiled and exist on your u-boot {if it can appear on **help**}, then it is a command **Syntax** error
 
 ![image-20260309015254229](assets/image-20260309015254229.png)
 
