@@ -2,22 +2,66 @@
 
 ## Project Description
 
-This document contains the detailed **Raspberry Pi implementation** for running **U-Boot + Linux kernel + custom init program** on the real **Raspberry Pi 3 B+** hardware.
+This project explains how to boot a **Linux kernel** using **U-Boot** on **Raspberry Pi 3 B+**, while using a **BusyBox-based initramfs** as the early init environment. The BusyBox initramfs provides a small boot-selection layer that allows choosing between booting from the **SD card root filesystem** or an **NFS root filesystem**.
 
-It focuses only on the real hardware workflow, including:
+The project also keeps support for using the previously built **micro shell** as an init program inside the selected root filesystem. In this setup, BusyBox is used to provide the minimal userspace tools required during the early boot stage, such as mounting filesystems, handling devices, configuring networking, and switching to the final root filesystem.
 
-- communicating with U-Boot through serial
-- copying boot and rootfs files
-- using SD card, NFS, or initramfs
-- enabling TFTP
-- setting `bootargs`
-- setting `bootcmd`
-- booting from the selected method
-- showing the final successful shell results
+This guide includes:
+- creating and using symbolic links to simplify working paths
+- building **U-Boot**
+- building the **Linux kernel**
+- building the **micro shell**
+- building a **static BusyBox**
+- preparing a **BusyBox-based initramfs**
+- preparing the **minimal bootfs**
+- optional **TFTP** and **NFS** setup
+- configuring **bootargs** and **bootcmd**
+- booting on real Raspberry Pi hardware
+- selecting between **SD card** and **NFS** rootfs at boot time
+
+> Note: Commands were updated only where relative-path usage through the provided symbolic links can preserve the same logic and final result.  
+> Script contents were not modified.
 
 ---
 
-### Create symbolic links for your folders:
+## Table of Contents
+
+- [Project Description](#project-description)
+- [Create symbolic links for your folders](#create-symbolic-links-for-your-folders)
+- [1. Build U-Boot for the Target Hardware](#1-build-u-boot-for-the-target-hardware)
+  - [1.1 compile and build u-boot for your target hardware](#11-compile-and-build-u-boot-for-your-target-hardware)
+- [2. Build the Linux Kernel for the Target Hardware](#2-build-the-linux-kernel-for-the-target-hardware)
+  - [2.1 Compile and build kernel for your target hardware](#21-compile-and-build-kernel-for-your-target-hardware)
+- [3. Build the Busybox Init Program](#3-build-the-busybox-init-program)
+  - [3.1 compile the micro shell](#31-compile-the-micro-shell)
+  - [3.2 Build Static BusyBox](#32-build-static-busybox)
+  - [3.3 Install BusyBox Binaries](#33-install-busybox-binaries)
+  - [3.4 Create Init Script](#34-create-init-script)
+  - [3.5 Create Boot Selection Script (rcS)](#35-create-boot-selection-script-rcs)
+- [4. Prepare the Minimal bootfs Files](#4-prepare-the-minimal-bootfs-files)
+- [5. Optional Network Services Setup](#5-optional-network-services-setup)
+  - [5.1 setup TFTP on PC 'if needed'](#51-setup-tftp-on-pc-if-needed)
+  - [5.2 setup NFS on PC 'if needed'](#52-setup-nfs-on-pc-if-needed)
+- [6. Raspberry pi Implementation](#6-raspberry-pi-implementation)
+  - [6.1 run the picocom to communicate with U-boot](#61-run-the-picocom-to-communicate-with-u-boot)
+  - [6.2 put the necessary files on the "sd card bootfs" partition](#62-put-the-necessary-files-on-the-sd-card-bootfs-partition)
+  - [6.3 put the necessary files on the "rootfs" partition](#63-put-the-necessary-files-on-the-rootfs-partition)
+  - [6.4 enable TFTP protocol](#64-enable-tftp-protocol)
+  - [6.5 set the 'bootargs'](#65-set-the-bootargs)
+  - [6.6 set the 'bootcmd'](#66-set-the-bootcmd)
+- [7. Output Summary](#7-output-summary)
+  - [7.1 Result 1: the dual boot selective screen](#71-result-1-the-dual-boot-selective-screen)
+  - [7.2 Result 2: booting on nfs (containing microshell)](#72-result-2-booting-on-nfs-containing-microshell)
+  - [7.3 Result 3: booting on SD card (containing rasdepian os rootfs)](#73-result-3-booting-on-sd-card-containing-rasdepian-os-rootfs)
+
+---
+
+## Create symbolic links for your folders
+
+<details>
+<summary>Open section</summary>
+
+These symbolic links simplify path handling and make many commands shorter and easier to reuse.
 
 ```bash
 ln -s ~/ITI_Files/linux/Embedded-Linux/u-boot u-boot_repo_Slink
@@ -31,9 +75,14 @@ ln -s ~/ITI_Files/linux/Embedded-Linux/initramfs/rootfs/ rootfs_initramfs_Slink
 ln -s ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/ minBootfs_folder_Slink
 ```
 
+</details>
 
+---
 
 ## 1. Build U-Boot for the Target Hardware
+
+<details>
+<summary>Open section</summary>
 
 ### Same as we did with kernel loading:
 
@@ -41,7 +90,7 @@ ln -s ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus
 
 ```bash
 # To go to the folder where you installed U-Boot
-cd /home/zee/ITI_Files/linux/Embedded-Linux/u-boot
+cd u-boot_repo_Slink
 
 # To select your compiler based on the new custom board architecture.
 export CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
@@ -59,15 +108,20 @@ make menuconfig
 make -j$(nproc)
 ```
 
+</details>
+
 ---
 
 ## 2. Build the Linux Kernel for the Target Hardware
+
+<details>
+<summary>Open section</summary>
 
 #### 2.1 Compile and build kernel for your target hardware:
 
 ```bash
 # To go to the folder where you installed rasberryPiLinux_repo
-cd /home/zee/ITI_Files/linux/Embedded-Linux/rasberryPiLinux_repo/linux
+cd rpiLinux_repo_Slink
 
 # To select your compiler based on the board architecture.
 export CROSS_COMPILE=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-
@@ -86,9 +140,12 @@ make menuconfig
 make -j$(nproc)
 ```
 
+</details>
+
 ---
 
 ## 3. Build the Busybox Init Program
+
 
 #### 3.1 compile the micro shell
 
@@ -378,9 +435,12 @@ Make the rcS script executable:
 chmod +x rootfs_initramfs_Slink/etc/init.d/rcS
 ```
 
-------
+---
 
 ## 4. Prepare the Minimal bootfs Files
+
+<details>
+<summary>Open section</summary>
 
 #### collect and edit the minimal bootfs files:
 
@@ -389,14 +449,19 @@ Copy the kernel image and U-Boot binary into the boot partition files directory.
 ```bash
 sudo cp rpiLinux_repo_Slink/arch/arm64/boot/Image minBootfs_folder_Slink
 
-sudo cp ~/ITI_Files/linux/Embedded-Linux/u-boot/u-boot.bin minBootfs_folder_Slink
+sudo cp u-boot_repo_Slink/u-boot.bin minBootfs_folder_Slink
 ```
 
 ![image-20260326233349102](assets/image-20260326233349102.png)
 
+</details>
+
 ---
 
 ## 5. Optional Network Services Setup
+
+<details>
+<summary>Open section</summary>
 
 These services are useful if you want to boot or load files over the network on the real hardware.
 
@@ -405,7 +470,7 @@ These services are useful if you want to boot or load files over the network on 
 ```bash
 sudo apt install tftpd-hpa
 sudo nano /etc/default/tftpd-hpa
-sudo mkdir -p /home/zee/ITI_Files/linux/Embedded-Linux/srv/tftp
+sudo mkdir -p tftp_folder_Slink
 ```
 
 the file should contain:
@@ -444,7 +509,7 @@ sudo systemctl restart tftpd-hpa
 sudo apt install nfs-kernel-server
 
 # Create directory for rootfs (sudo: to force using sudo with this location in the future)
-sudo mkdir -p /home/zee/ITI_Files/linux/Embedded-Linux/srv/nfs
+sudo mkdir -p nfs_folder_Slink
 
 # Configure NFS exports
 sudo nano /etc/exports
@@ -470,9 +535,14 @@ sudo nano /etc/exports
 
 now put the rootfs files on the selected location written on the exports folder: **"/home/zee/ITI_Files/linux/Embedded-Linux/srv/nfs "**
 
+</details>
+
 ---
 
-# Raspberry pi Implementation
+## 6. Raspberry pi Implementation
+
+<details>
+<summary>Open section</summary>
 
 ## 6. Go for the Real Hardware
 
@@ -487,7 +557,7 @@ picocom -b 115200 /dev/ttyUSB0
 ### 6.2 put the necessary files on the "sd card bootfs" partition
 
 ```bash
-sudo cp -rv ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/* /media/zee/boot/
+sudo cp -rv minBootfs_folder_Slink/* /media/zee/boot/
 ```
 
 ![image-20260310143340128](assets/image-20260310143340128.png)
@@ -497,7 +567,7 @@ sudo cp -rv ~/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI
 using **"sd card"** connected to the pc:
 
 ```bash
-sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi /media/zee/rootfs/init
+sudo cp microShell_repo_Slink/dash-rpi /media/zee/rootfs/init
 
 # sudo chmod +x /media/zee/rootfs/init
 
@@ -507,7 +577,7 @@ cp -a busybox_repo_Slink/static_install/bin/busybox rootfs_initramfs_Slink/bin/
 using **"NFS"**:
 
 ```bash
-sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/srv/nfs/init
+sudo cp microShell_repo_Slink/dash-rpi nfs_folder_Slink/init
 
 # sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/srv/nfs/init
 ```
@@ -516,7 +586,7 @@ using **"Initramfs"**:
 
 ```bash
 # fill the folder with all the rootfs folders and files:
-cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/initramfs/rootfs/init
+cp microShell_repo_Slink/dash-rpi rootfs_initramfs_Slink/init
 # sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/initramfs/init
 ```
 
@@ -527,12 +597,12 @@ find . | cpio -H newc -ov --owner root:root > ../initramfs.cpio
 
 # Compress it (optional but recommended)
 # gzip -k ../initramfs.cpio
-gzip -k ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio
+gzip -k ../initramfs.cpio
 # Result: initramfs.cpio.gz
 
 # wrap everything with mkimage:		If using "bootm" (legacy)
 # mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d initramfs.cpio.gz uInitramfs
-~/ITI_Files/linux/Embedded-Linux/u-boot/tools/mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz ~/ITI_Files/linux/Embedded-Linux/initramfs/uInitramfs
+../u-boot_repo_Slink/tools/mkimage -A arm64 -T ramdisk -C gzip -n "Initramfs" -d ../initramfs.cpio.gz ../uInitramfs
 ```
 
 #### Notes & Warnings:
@@ -560,16 +630,16 @@ this is the correct one![image-20260402160722563](assets/image-20260402160722563
 ```bash
 # copy what ever you want to load on the ram to TFTP folder
 # image:
-sudo cp /home/zee/ITI_Files/linux/Embedded-Linux/EmbeddedLinux/Minimal_bootfs_forRPI3bplus_FATp1/Image ~/ITI_Files/linux/Embedded-Linux/srv/tftp/
+sudo cp minBootfs_folder_Slink/Image tftp_folder_Slink/
 
 # ➡️ 🌟 init program --> shell:
-sudo cp ~/ITI_Files/linux/Embedded-Linux/microUnixShell_dash/dash/dash-rpi ~/ITI_Files/linux/Embedded-Linux/srv/tftp/init
+sudo cp microShell_repo_Slink/dash-rpi tftp_folder_Slink/init
 #sudo chmod +x ~/ITI_Files/linux/Embedded-Linux/srv/tftp/init
 
 # ➡️ 🌟 initramfs:
-sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/initramfs.cpio.gz ~/ITI_Files/linux/Embedded-Linux/srv/tftp/
+sudo cp ../initramfs.cpio.gz tftp_folder_Slink/
 # or 
-sudo cp ~/ITI_Files/linux/Embedded-Linux/initramfs/uInitramfs ~/ITI_Files/linux/Embedded-Linux/srv/tftp/
+sudo cp ../uInitramfs tftp_folder_Slink/
 ```
 
 `u-boot commands`
@@ -701,9 +771,14 @@ saveenv
 
 ![image-20260331000952867](assets/image-20260331000952867.png)
 
+</details>
+
 ---
 
-# Output Summary
+## 7. Output Summary
+
+<details>
+<summary>Open section</summary>
 
 ## 7. Final Output on Real Hardware through `picocom`
 
@@ -721,8 +796,9 @@ use any command with `tab` twice to list the folders
 
 ### 7.3 Result 3: booting on SD card (containing rasdepian os rootfs)
 
-
-
 all the folders shown in the 'ls' command [because i did not remove the rasdepian os rootfs] and even go back to u-boot with the `reboot` command 
 
 ![image-20260402170054165](assets/image-20260402170054165.png)
+
+</details>
+
