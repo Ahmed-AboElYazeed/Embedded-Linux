@@ -11,4 +11,5 @@ testing/
 
 # Files
 sd.img
+*.ext4
 
