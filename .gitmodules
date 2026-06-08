@@ -1,0 +1,3 @@
+[submodule "cppProject/OTA_Project"]
+	path = cppProject/OTA_Project
+	url = git@github.com:Ahmed-AboElYazeed/OTA_Project.git
