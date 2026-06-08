@@ -1,5 +1,6 @@
 # Ignores these folders anywhere in the repo
 build/
+build*/
 .vscode/
 testing/
 
