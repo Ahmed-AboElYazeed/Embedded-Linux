@@ -1,3 +1,3 @@
-[submodule "cppProject/OTA_Project"]
-	path = cppProject/OTA_Project
-	url = git@github.com:Ahmed-AboElYazeed/OTA_Project.git
+[submodule "cppProject/SecureZone-OTA"]
+	path = cppProject/SecureZone-OTA
+	url = git@github.com:Ahmed-AboElYazeed/SecureZone-OTA.git
